@@ -1,0 +1,14 @@
+{application, geohash_si,
+ [
+  {description, "An Erlang library for geohash"},
+  {vsn, "0.0.1"},
+  {modules, [
+             geohash_si
+            ]},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {env, []}
+ ]}.

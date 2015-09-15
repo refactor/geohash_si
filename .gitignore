@@ -1,0 +1,11 @@
+.eunit/
+.qc/
+.eqc-info
+.rebar/
+ebin/
+*.o
+*.d
+*.so
+*.beam
+*.sw[op]
+*~
