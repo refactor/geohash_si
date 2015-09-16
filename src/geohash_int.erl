@@ -9,10 +9,6 @@
 nif_stub_error(Line) ->
     erlang:nif_error({nif_not_loaded,module,?MODULE,line,Line}).
 
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
--endif.
-
 init() ->
     PrivDir = case code:priv_dir(?MODULE) of
                   {error, bad_name} ->
@@ -50,22 +46,3 @@ encode(Min, Max, L, {WS,EN,LonLat}, Step, H)  ->
 
 
 
-%% ===================================================================
-%% EUnit tests
-%% ===================================================================
--ifdef(TEST).
-
-basic_test() ->
-    {ok, World} = geohash_int:define_world(20037726.37,-20037726.37,-20037726.37,20037726.37),
-    Latitude = 9741705.20,
-    Longitude = 5417390.90,
-    Level = 24,
-
-    #{east := E, north := N, south := S, west := W} = World,
-    Res = geohash_int:encode(World, Latitude, Longitude, Level),
-    ?debugFmt("res: ~p~n", [Res]),
-    {ok, Hash} = Res,
-    ?assertEqual(225797299132452, maps:get(bits,Hash)),
-    ?assertEqual(24, maps:get(level,Hash)).
-
--endif.
