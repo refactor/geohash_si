@@ -7,19 +7,18 @@ typedef struct
 } geohash_int_handle;
 
 // Prototypes
-static ERL_NIF_TERM geohash_int_new(ErlNifEnv* env, int argc,
+static ERL_NIF_TERM geohash_int_define_world(ErlNifEnv* env, int argc,
                                    const ERL_NIF_TERM argv[]);
-static ERL_NIF_TERM geohash_int_myfunction(ErlNifEnv* env, int argc,
+static ERL_NIF_TERM geohash_int_encode(ErlNifEnv* env, int argc,
                                           const ERL_NIF_TERM argv[]);
 
 static ErlNifFunc nif_funcs[] =
 {
-    {"new", 0, geohash_int_new},
-    {"myfunction", 1, geohash_int_myfunction}
+    {"encode", 4, geohash_int_encode}
 };
 
-static ERL_NIF_TERM geohash_int_new(ErlNifEnv* env, int argc,
-                                   const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM geohash_int_define_world(ErlNifEnv* env, int argc,
+                                             const ERL_NIF_TERM argv[])
 {
     geohash_int_handle* handle = enif_alloc_resource(geohash_int_RESOURCE,
                                                     sizeof(geohash_int_handle));
@@ -29,8 +28,8 @@ static ERL_NIF_TERM geohash_int_new(ErlNifEnv* env, int argc,
 }
 
 
-static ERL_NIF_TERM geohash_int_myfunction(ErlNifEnv* env, int argc,
-                                          const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM geohash_int_encode(ErlNifEnv* env, int argc,
+                                       const ERL_NIF_TERM argv[])
 {
     return enif_make_atom(env, "ok");
 }
