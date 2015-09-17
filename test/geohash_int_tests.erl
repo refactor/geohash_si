@@ -7,12 +7,13 @@
 %% ===================================================================
 
 basic_test() ->
-    {ok, World} = geohash_int:define_world(20037726.37,-20037726.37,-20037726.37,20037726.37),
+    {ok, World} = geohash_int:define_world(20037726.37,-20037726.37,
+                                           -20037726.37,20037726.37,
+                                          'N'),
     Latitude = 9741705.20,
     Longitude = 5417390.90,
     Level = 24,
 
-    #{east := E, north := N, south := S, west := W} = World,
     Res = geohash_int:encode(World, Latitude, Longitude, Level),
     ?debugFmt("res: ~p~n", [Res]),
     {ok, Hash} = Res,
