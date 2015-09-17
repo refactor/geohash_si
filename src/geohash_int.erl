@@ -36,7 +36,7 @@ init() ->
 %%  -----------------           -----------------
 %%       N mode                       Z mode
 %%
-define_world(N,S,W,E,Mode) when N > S, E > W ->
+define_world(S,N,W,E,Mode) when N > S, E > W ->
     {ok, #{north => N,
            south => S,
            west  => W,
