@@ -1,5 +1,6 @@
 .eunit/
 .qc/
+*.eqc
 .eqc-info
 .rebar/
 ebin/
