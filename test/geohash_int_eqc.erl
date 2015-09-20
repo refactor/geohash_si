@@ -47,10 +47,11 @@ position_in_corners(Wgen) ->
     ?LET({Level,World}, {eqc_gen:choose(1,36),Wgen},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
-             X = (E - W) / math:pow(2, Level),
-             Y = (N - S) / math:pow(2, Level),
-             LeftBottom = {W+X/2, S+Y/2},
-             RightTop = {E - X/2, N - Y/2},
+             CellNum = math:pow(2, Level),
+             CellWidth = (E - W) / CellNum,
+             CellHight = (N - S) / CellNum,
+             LeftBottom = {W + CellWidth * rand:uniform(), S + CellHight * rand:uniform()},
+             RightTop = {E - CellWidth * rand:uniform(), N - CellHight * rand:uniform()},
              RX = W + (E - W) * rand:uniform(),
              RY = S + (N - S) * rand:uniform(),
              {LeftBottom, RightTop, {RX,RY}, Level,World}
