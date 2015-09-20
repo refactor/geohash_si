@@ -5,19 +5,22 @@
 -compile(export_all).
 
 prop_hashint_at_corners() ->
-    ?FORALL({LeftBottom,RightTop,RandomPosition,Level,World}, position_in_corners(world()),
+    ?FORALL({T1, T2}, {position_in_corners(world('N')),position_in_corners(world('Z'))},
             begin
-                {Res,_Time} = do_encode({LeftBottom,RightTop,RandomPosition,Level,World}),
-                Res
+                {Res1,_Time1} = do_encode(T1),
+                {Res2,_Time2} = do_encode(T2),
+                Res1 andalso Res2
             end).
 
 prop_collect_hashint_encode_time() ->
-    ?FORALL({Res, Time}, encode_generator(),
-            collect(with_title("average geoint encode time: microseconds(us)"), Time,
-                    Res == true)).
+    numtests(10000,
+             ?FORALL({{Res1, Time1},{Res2, Time2}}, {encode_generator('N'),encode_generator('Z')},
+                     collect(with_title("average geoint encode time: microseconds(us)"),
+                     round((Time1+Time2)/2),
+                     Res1 == true andalso Res2 == true))).
 
-encode_generator() ->
-    ?LET(P, position_in_corners(world()),
+encode_generator(M) ->
+    ?LET(P, position_in_corners(world(M)),
          do_encode(P)).
 
 do_encode({LeftBottom,RightTop,RandomPosition,Level,World}) ->
@@ -53,12 +56,12 @@ position_in_corners(Wgen) ->
              {LeftBottom, RightTop, {RX,RY}, Level,World}
          end).
 
-world() ->
+world(M) ->
     ?LET(R,real(),
          begin
             {ok, World} = geohash_int:define_world(-20037726.37,20037726.37,
                                                    -20037726.37,20037726.37,
-                                                  'N'),
+                                                   M),
             World
          end).
 
