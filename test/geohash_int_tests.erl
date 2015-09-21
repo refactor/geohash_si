@@ -21,8 +21,8 @@ geohash_int_encode1_test() ->
     ?assertEqual(24, maps:get(level,Hash)).
 
 geohash_int_encode2_test() ->
-    {ok, World} = geohash_int:define_world(-90,90,
-                                           -180,180,
+    {ok, World} = geohash_int:define_world(-90.0,90.0,
+                                           -180.0,180.0,
                                           'N'),
     Latitude = 40.689167,
     Longitude = -74.044444,
@@ -31,5 +31,6 @@ geohash_int_encode2_test() ->
     Res = geohash_int:encode(World, Latitude, Longitude, Level),
     ?debugFmt("res: ~p~n", [Res]),
     {ok, Hash} = Res,
+    % 1707832276 is expected
     ?assertEqual(-(1 bsl (Level*2)) + 6002799572, maps:get(bits,Hash)),
     ?assertEqual(Level, maps:get(level,Hash)).
