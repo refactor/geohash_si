@@ -8,8 +8,8 @@
 
 prop_geohash_leftbottom() ->
     ?FORALL({Time, Hash, Level}, generate_point_in_leftbottom(world()),
-            measure("summary", Time,
-            collect(with_title("encode time(unit: microseconds[us])"), Time,
+            measure("summary(unit: nanoseconds[ns])", Time,
+            collect(with_title("encode time(unit: microseconds[us])"), round(Time/1000),
                     begin
                         #{bits:=HashInt, level:=L} = Hash,
                         equals({L,HashInt}, {Level,0})
@@ -17,8 +17,8 @@ prop_geohash_leftbottom() ->
 
 prop_geohash_righttop() ->
     ?FORALL({Time, Hash, Level, RightTop}, generate_point_in_righttop(world()),
-            measure("summary", Time,
-            collect(with_title("encode time(unit: microseconds[us])"), Time,
+            measure("summary(unit: nanoseconds[ns])", Time,
+            collect(with_title("encode time(unit: microseconds[us])"), round(Time/1000),
                     begin
                         End4 = (1 bsl (Level*2)) - 1,
                         #{bits:=HashInt, level:=L} = Hash,
@@ -29,8 +29,8 @@ prop_geohash_righttop() ->
 
 prop_geohash_center_leftbottom() ->
     ?FORALL({Time, Hash, Level}, generate_point_in_center_leftbottom(world()),
-            measure("summary", Time,
-            collect(with_title("encode time(unit: microseconds[us])"), Time,
+            measure("summary(unit: nanoseconds[ns])", Time,
+            collect(with_title("encode time(unit: microseconds[us])"), round(Time/1000),
                     begin
                         End1 = (1 bsl ((Level-1) * 2)) - 1,
                         #{bits:=HashInt, level:=L} = Hash,
@@ -39,8 +39,8 @@ prop_geohash_center_leftbottom() ->
 
 prop_geohash_center_righttop() ->
     ?FORALL({Time, Hash, Level}, generate_point_in_center_righttop(world()),
-            measure("summary", Time,
-            collect(with_title("encode time(unit: microseconds[us])"), Time,
+            measure("summary(unit: nanoseconds[ns])", Time,
+            collect(with_title("encode time(unit: microseconds[us])"), round(Time/1000),
                     begin
                         End3 = (1 bsl ((Level-1) * 2)) * 3 - 1,
                         Start4 = End3 + 1,
@@ -50,8 +50,8 @@ prop_geohash_center_righttop() ->
 
 prop_geohash_random_position() ->
     ?FORALL({Time, Hash, Level}, generate_point_randomly(world()),
-            measure("summary", Time,
-            collect(with_title("encode time(unit: microseconds[us])"), Time,
+            measure("summary(unit: nanoseconds[ns])", Time,
+            collect(with_title("encode time(unit: microseconds[us])"), round(Time/1000),
                     begin
                         Start1 = 0,
                         End4 = (1 bsl (Level*2)) - 1,
@@ -61,8 +61,8 @@ prop_geohash_random_position() ->
 
 prop_geohash_position_in_2nd_quadrant() ->
     ?FORALL({Time, Hash, Level,Mode}, generate_point_in_2nd_quadrant(world()),
-            measure("summary", Time,
-            collect(with_title("encode time(unit: microseconds[us])"), Time,
+            measure("summary(unit: nanoseconds[ns])", Time,
+            collect(with_title("encode time(unit: microseconds[us])"), round(Time/1000),
                     begin
                         End1 = (1 bsl ((Level-1) * 2)) - 1,
                         Start2 = End1 + 1, End2 = (1 bsl ((Level-1) * 2)) * 2 - 1,
@@ -76,8 +76,8 @@ prop_geohash_position_in_2nd_quadrant() ->
 
 prop_geohash_position_in_4th_quadrant() ->
     ?FORALL({Time, Hash, Level,Mode}, generate_point_in_4th_quadrant(world()),
-            measure("summary", Time,
-            collect(with_title("encode time(unit: microseconds[us])"), Time,
+            measure("summary(unit: nanoseconds[ns])", Time,
+            collect(with_title("encode time(unit: microseconds[us])"), round(Time/1000),
                     begin
                         End1 = (1 bsl ((Level-1) * 2)) - 1,
                         Start2 = End1 + 1, End2 = (1 bsl ((Level-1) * 2)) * 2 - 1,
@@ -98,7 +98,8 @@ generate_point_in_leftbottom(Wgen) ->
              CellHight = (N - S) / CellNum,
              LeftBottom = {W + CellWidth * rand:uniform(), S + CellHight * rand:uniform()},
              {Longitude, Latitude} = LeftBottom,
-             {Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+%             {Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             {Time, Hash} = tc_encode(World,Latitude,Longitude,Level),
              {Time, Hash, Level}
          end).
 
@@ -111,7 +112,8 @@ generate_point_in_righttop(Wgen) ->
              CellHight = (N - S) / CellNum,
              RightTop = {E - CellWidth * rand:uniform(), N - CellHight * rand:uniform()},
              {Longitude, Latitude} = RightTop,
-             {Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             %{Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             {Time, Hash} = tc_encode(World,Latitude,Longitude,Level),
              {Time, Hash, Level, RightTop}
          end).
 
@@ -127,7 +129,8 @@ generate_point_in_center_leftbottom(Wgen) ->
              CenterLB = {CenterX - CellWidth * rand:uniform(),
                          CenterY - CellHight * rand:uniform()},
              {Longitude, Latitude} = CenterLB,
-             {Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             %{Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             {Time, Hash} = tc_encode(World,Latitude,Longitude,Level),
              {Time, Hash, Level}
          end).
 
@@ -143,7 +146,8 @@ generate_point_in_center_righttop(Wgen) ->
              CenterRT = {CenterX + CellWidth * rand:uniform(),
                          CenterY + CellHight * rand:uniform()},
              {Longitude, Latitude} = CenterRT,
-             {Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             %{Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             {Time, Hash} = tc_encode(World,Latitude,Longitude,Level),
              {Time, Hash, Level}
          end).
 
@@ -153,7 +157,8 @@ generate_point_randomly(Wgen) ->
              #{north:=N,south:=S,west:=W,east:=E} = World,
              Longitude = W + (E - W) * rand:uniform(),
              Latitude = S + (N - S) * rand:uniform(),
-             {Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             %{Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             {Time, Hash} = tc_encode(World,Latitude,Longitude,Level),
              {Time, Hash, Level}
          end).
 
@@ -165,7 +170,8 @@ generate_point_in_2nd_quadrant(Wgen) ->
              CenterY = (N + S) / 2,
              SecondQuadrantPoint = {(W + CenterX) / 2, (CenterY + N) / 2},
              {Longitude, Latitude} = SecondQuadrantPoint,
-             {Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             %{Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             {Time, Hash} = tc_encode(World,Latitude,Longitude,Level),
              {Time, Hash, Level,M}
          end).
 
@@ -177,7 +183,8 @@ generate_point_in_4th_quadrant(Wgen) ->
              CenterY = (N + S) / 2,
              FourthQuadrantPoint = {(CenterX + E) / 2, (S + CenterY) / 2},
              {Longitude, Latitude} = FourthQuadrantPoint,
-             {Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             %{Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
+             {Time, Hash} = tc_encode(World,Latitude,Longitude,Level),
              {Time, Hash, Level,M}
          end).
 
@@ -192,4 +199,10 @@ world(M) ->
                                                    M),
             World
          end).
+
+tc_encode(World,Latitude,Longitude,Level) ->
+     Start = erlang:system_time(nano_seconds),
+     {ok,Hash} = geohash_int:encode(World,Latitude,Longitude,Level),
+     Time = erlang:system_time(nano_seconds) - Start,
+     {Time, Hash}.
 
