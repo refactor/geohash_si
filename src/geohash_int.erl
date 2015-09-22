@@ -1,9 +1,12 @@
 -module(geohash_int).
 
 -export([define_world/5,
+         fast_encode/4,
          encode/4]).
 
 -on_load(init/0).
+
+-define(MAX_LEVEL, 30).
 
 -define(nif_stub, nif_stub_error(?LINE)).
 nif_stub_error(Line) ->
@@ -46,7 +49,10 @@ define_world(_,_,_,_,_) ->
     {error, insane_world}.
 
 
-encode(_,_,_,Level) when Level > 32 ->
+fast_encode(#{east:=E, north:=N, south:=S, west:=W, mode:=M}, Latitude, Longitude, Level) ->
+    ?nif_stub.
+
+encode(_,_,_,Level) when Level > ?MAX_LEVEL ->
     {error, too_small_world};
 encode(#{east:=E, north:=N, south:=S, west:=W, mode:=M}, Latitude, Longitude, Level) 
         when W =< Longitude, Longitude =< E, S =< Latitude, Latitude =< N ->
