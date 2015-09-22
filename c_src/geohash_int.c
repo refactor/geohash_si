@@ -1,6 +1,8 @@
 #include "erl_nif.h"
 #include <stdio.h>
 
+#define MAX_LEVEL 32
+
 static ERL_NIF_TERM ATOM_OK;
 static ERL_NIF_TERM ATOM_ERROR;
 static ERL_NIF_TERM ATOM_ERR_TOOBIG_LEVEL;
@@ -66,7 +68,7 @@ static ERL_NIF_TERM geohash_int_encode(ErlNifEnv* env, int argc,
             !enif_get_uint(env, argv[3], &level)) 
         return enif_make_badarg(env);
 
-    if (level > 36) 
+    if (level > MAX_LEVEL) 
         return enif_make_tuple2(env,
                 ATOM_ERROR,
                 enif_make_tuple2(env,
@@ -76,7 +78,6 @@ static ERL_NIF_TERM geohash_int_encode(ErlNifEnv* env, int argc,
     double w, e, n, s;
     char smode[2];
     ERL_NIF_TERM wt, et, nt, st, mt;
-    ERL_NIF_TERM west, east, north, south, mode;
     if (!enif_get_map_value(env, argv[0], ATOM_WEST, &wt) ||
         !enif_get_map_value(env, argv[0], ATOM_EAST, &et) ||
         !enif_get_map_value(env, argv[0], ATOM_NORTH, &nt) ||

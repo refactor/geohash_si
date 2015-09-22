@@ -4,6 +4,8 @@
 
 -compile(export_all).
 
+-define(MAX_LEVEL, 32).
+
 prop_geohash_leftbottom() ->
     ?FORALL({Time, Hash, Level}, generate_point_in_leftbottom(world()),
             measure("summary", Time,
@@ -14,13 +16,15 @@ prop_geohash_leftbottom() ->
                     end))).
 
 prop_geohash_righttop() ->
-    ?FORALL({Time, Hash, Level}, generate_point_in_righttop(world()),
+    ?FORALL({Time, Hash, Level, RightTop}, generate_point_in_righttop(world()),
             measure("summary", Time,
             collect(with_title("encode time(unit: microseconds[us])"), Time,
                     begin
                         End4 = (1 bsl (Level*2)) - 1,
                         #{bits:=HashInt, level:=L} = Hash,
-                        equals({L,HashInt}, {Level,End4})
+                        ?WHENFAIL(io:format("encode(~p, ~p)=~p, != ~p", [RightTop,Level,HashInt,End4]),
+                                  {L,HashInt} == {Level,End4})
+
                     end))).
 
 prop_geohash_center_leftbottom() ->
@@ -86,7 +90,7 @@ prop_geohash_position_in_4th_quadrant() ->
                     end))).
 
 generate_point_in_leftbottom(Wgen) ->
-    ?LET({Level,World}, {eqc_gen:choose(1,36),Wgen},
+    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL),Wgen},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              CellNum = math:pow(2, Level),
@@ -99,7 +103,7 @@ generate_point_in_leftbottom(Wgen) ->
          end).
 
 generate_point_in_righttop(Wgen) ->
-    ?LET({Level,World}, {eqc_gen:choose(1,36),Wgen},
+    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL),Wgen},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              CellNum = math:pow(2, Level),
@@ -108,11 +112,11 @@ generate_point_in_righttop(Wgen) ->
              RightTop = {E - CellWidth * rand:uniform(), N - CellHight * rand:uniform()},
              {Longitude, Latitude} = RightTop,
              {Time, {ok, Hash}} = timer:tc(geohash_int, encode, [World,Latitude,Longitude,Level]),
-             {Time, Hash, Level}
+             {Time, Hash, Level, RightTop}
          end).
 
 generate_point_in_center_leftbottom(Wgen) ->
-    ?LET({Level,World}, {eqc_gen:choose(1,36),Wgen},
+    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL),Wgen},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              CellNum = math:pow(2, Level),
@@ -128,7 +132,7 @@ generate_point_in_center_leftbottom(Wgen) ->
          end).
 
 generate_point_in_center_righttop(Wgen) ->
-    ?LET({Level,World}, {eqc_gen:choose(1,36),Wgen},
+    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL),Wgen},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              CellNum = math:pow(2, Level),
@@ -144,7 +148,7 @@ generate_point_in_center_righttop(Wgen) ->
          end).
 
 generate_point_randomly(Wgen) ->
-    ?LET({Level,World}, {eqc_gen:choose(1,36),Wgen},
+    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL),Wgen},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              Longitude = W + (E - W) * rand:uniform(),
@@ -154,7 +158,7 @@ generate_point_randomly(Wgen) ->
          end).
 
 generate_point_in_2nd_quadrant(Wgen) ->
-    ?LET({Level,World}, {eqc_gen:choose(1,36),Wgen},
+    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL),Wgen},
          begin
              #{mode:=M, north:=N,south:=S,west:=W,east:=E} = World,
              CenterX = (E + W) / 2,
@@ -166,7 +170,7 @@ generate_point_in_2nd_quadrant(Wgen) ->
          end).
 
 generate_point_in_4th_quadrant(Wgen) ->
-    ?LET({Level,World}, {eqc_gen:choose(1,36),Wgen},
+    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL),Wgen},
          begin
              #{mode:=M, north:=N,south:=S,west:=W,east:=E} = World,
              CenterX = (E + W) / 2,
