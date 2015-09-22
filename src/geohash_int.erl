@@ -39,6 +39,7 @@ init() ->
 %%  +-------+-------+           +-------+-------+
 %%       N mode                       Z mode
 %%
+-spec define_world(float(),float(),float(),float(),atom()) -> {ok,map()}|{error,atom()}.
 define_world(S,N,W,E,Mode) when N > S, E > W ->
     {ok, #{north => N,
            south => S,
@@ -48,10 +49,11 @@ define_world(S,N,W,E,Mode) when N > S, E > W ->
 define_world(_,_,_,_,_) ->
     {error, insane_world}.
 
-
+-spec fast_encode(map(),float(),float(),1..?MAX_LEVEL) -> {ok,map()} | {error, atom()|tuple()}. 
 fast_encode(#{east:=E, north:=N, south:=S, west:=W, mode:=M}, Latitude, Longitude, Level) ->
     ?nif_stub.
 
+-spec encode(map(),float(),float(),1..?MAX_LEVEL) -> {ok,map()} | {error, atom()|tuple()}. 
 encode(_,_,_,Level) when Level > ?MAX_LEVEL ->
     {error, too_small_world};
 encode(#{east:=E, north:=N, south:=S, west:=W, mode:=M}, Latitude, Longitude, Level) 
@@ -68,7 +70,6 @@ encode(#{east:=E, north:=N, south:=S, west:=W, mode:=M}, Latitude, Longitude, Le
     end;
 encode(_,_,_,_) ->
     {error, out_of_world}.
-
 
 % @private
 do_encode(_Min, _Max, _L, _, 0, H) ->
