@@ -277,13 +277,20 @@ world() ->
     oneof([world('N'), world('Z')]).
 
 world(M) ->
-    ?LET(R,real(),
+    ?LET({Ymin,Ymax,Xmin,Xmax}, world_range(),
          begin
-            {ok, World} = geohash_int:define_world(-20037726.37,20037726.37,
-                                                   -20037726.37,20037726.37,
+            {ok, World} = geohash_int:define_world(float(Ymin),float(Ymax),
+                                                   float(Xmin),float(Xmax),
                                                    M),
             World
          end).
+
+world_range() ->
+    frequency([{25, {return(-20037726.37),return(20037726.37),return(-20037726.37),return(20037726.37)}},
+               {25, {return(-90.0),return(90.0),return(-180.0),return(180.0)}},
+               {25, {choose(-20037726,10),choose(11,20037726),choose(-20037726,10),choose(11,20037726)}},
+               {25, {choose(-90,1),choose(2,90),choose(-180,1),choose(2,180)}}]).
+
 
 tc_encode(World,Latitude,Longitude,Level) ->
      Start = erlang:system_time(nano_seconds),
