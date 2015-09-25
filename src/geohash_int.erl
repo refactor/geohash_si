@@ -2,7 +2,8 @@
 
 -export([define_world/5,
          fast_encode/4,
-         encode/4]).
+         encode/4,
+         decode/2]).
 
 -on_load(init/0).
 
@@ -71,6 +72,17 @@ encode(#{east:=E, north:=N, south:=S, west:=W, mode:=M}, Latitude, Longitude, Le
 encode(_,_,_,_) ->
     {error, out_of_world}.
 
+-spec decode(map(), map()) -> {ok, map()} | {error, atom()}.
+decode(#{level:=Level}, #{level:=PointLevel}) when Level>?MAX_LEVEL; PointLevel>?MAX_LEVEL ->
+    {error, too_small_world};
+decode(#{east:=E, north:=N, south:=S, west:=W, mode:='N'}, #{bits:=H, level:=Level}) ->
+    {XMin,XMax,YMin,YMax} = do_decode(W, E, S, N, H, Level),
+    {ok, #{xmin=>XMin,xmax=>XMax,ymin=>YMin,ymax=>YMax}};
+decode(#{east:=E, north:=N, south:=S, west:=W, mode:='Z'}, #{bits:=H, level:=Level}) ->
+    {YMin,YMax,XMin,XMax} = do_decode(S, N, W, E, H, Level),
+    {ok, #{xmin=>XMin,xmax=>XMax,ymin=>YMin,ymax=>YMax}}.
+
+
 % @private
 do_encode(_Min, _Max, _L, _, 0, H) ->
     H;
@@ -80,3 +92,20 @@ do_encode(Min, Max, L, {WS,EN,LonLat}, Step, H)  ->
     do_encode(WS, EN, LonLat, {(Min + Max) / 2.0, Max, L}, Step - 1, (H bsl 1) + 1).
 
 
+% @private 
+do_decode(XMin, XMax, YMin, YMax, _, 0) ->
+    {XMin, XMax, YMin, YMax};
+do_decode(XMin, XMax, YMin, YMax, HashInt, Level) ->
+    case get_duplexbits(HashInt, Level) of
+    2#00 ->
+        do_decode(XMin, (XMin+XMax)/2, YMin, (YMin+YMax)/2, HashInt, Level - 1);
+    2#01 ->
+        do_decode(XMin, (XMin+XMax)/2, (YMin+YMax)/2, YMax, HashInt, Level - 1);
+    2#10 ->    
+        do_decode((XMin+XMax)/2, XMax, YMin, (YMin+YMax)/2, HashInt, Level - 1);
+    2#11 ->    
+        do_decode((XMin+XMax)/2, XMax, (YMin+YMax)/2, YMax, HashInt, Level - 1)
+    end.
+
+get_duplexbits(HashInt, Level) ->
+    (HashInt bsr ((Level-1)*2)) band 2#11.
