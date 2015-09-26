@@ -1,10 +1,10 @@
--module(geohash_int_eqc).
+-module(geohash_int_encode_eqc).
+
+-include("../src/geohash_int.hrl").
 
 -include_lib("eqc/include/eqc.hrl").
 
 -compile(export_all).
-
--define(MAX_LEVEL, 30).
 
 prop_geohash_encode_leftbottom() ->
     ?FORALL({Time, Hash, Level}, generate_point_in_leftbottom(world(), fun tc_encode/4),

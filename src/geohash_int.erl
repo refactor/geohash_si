@@ -7,7 +7,7 @@
 
 -on_load(init/0).
 
--define(MAX_LEVEL, 30).
+-include("geohash_int.hrl").
 
 -define(nif_stub, nif_stub_error(?LINE)).
 nif_stub_error(Line) ->
