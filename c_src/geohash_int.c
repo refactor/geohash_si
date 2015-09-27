@@ -18,6 +18,11 @@ static ERL_NIF_TERM ATOM_MODE;
 static ERL_NIF_TERM ATOM_BITS;
 static ERL_NIF_TERM ATOM_LEVEL;
 
+static ERL_NIF_TERM ATOM_XMIN;
+static ERL_NIF_TERM ATOM_XMAX;
+static ERL_NIF_TERM ATOM_YMIN;
+static ERL_NIF_TERM ATOM_YMAX;
+
 static ErlNifResourceType* geohash_int_RESOURCE = NULL;
 
 typedef struct
@@ -26,16 +31,19 @@ typedef struct
 
 // Prototypes
 static ERL_NIF_TERM geohash_int_define_world(ErlNifEnv* env, int argc,
-                                   const ERL_NIF_TERM argv[]);
+                                             const ERL_NIF_TERM argv[]);
 static ERL_NIF_TERM geohash_int_fast_encode(ErlNifEnv* env, int argc,
-                                          const ERL_NIF_TERM argv[]);
+                                            const ERL_NIF_TERM argv[]);
 static ERL_NIF_TERM geohash_int_encode(ErlNifEnv* env, int argc,
-                                          const ERL_NIF_TERM argv[]);
+                                       const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM geohash_int_fast_decode(ErlNifEnv* env, int argc,
+                                       const ERL_NIF_TERM argv[]);
 
 static ErlNifFunc nif_funcs[] =
 {
     {"encode", 4, geohash_int_encode},
-    {"fast_encode", 4, geohash_int_fast_encode}
+    {"fast_encode", 4, geohash_int_fast_encode},
+    {"fast_decode", 2, geohash_int_fast_decode},
 };
 
 static ERL_NIF_TERM geohash_int_define_world(ErlNifEnv* env, int argc,
@@ -77,6 +85,98 @@ static inline uint64_t interleave64(uint32_t xlo, uint32_t ylo)
     y = (y | (y << S[0])) & B[0];
 
     return x | (y << 1);
+}
+
+static inline uint64_t deinterleave64(uint64_t interleaved)
+{
+    static const uint64_t B[] =
+        { 0x5555555555555555, 0x3333333333333333, 0x0F0F0F0F0F0F0F0F, 0x00FF00FF00FF00FF, 0x0000FFFF0000FFFF, 0x00000000FFFFFFFF };
+    static const unsigned int S[] =
+        { 0, 1, 2, 4, 8, 16 };
+
+    uint64_t x = interleaved; ///reverse the interleave process (http://stackoverflow.com/questions/4909263/how-to-efficiently-de-interleave-bits-inverse-morton)
+    uint64_t y = interleaved >> 1;
+
+    x = (x | (x >> S[0])) & B[0];
+    y = (y | (y >> S[0])) & B[0];
+
+    x = (x | (x >> S[1])) & B[1];
+    y = (y | (y >> S[1])) & B[1];
+
+    x = (x | (x >> S[2])) & B[2];
+    y = (y | (y >> S[2])) & B[2];
+
+    x = (x | (x >> S[3])) & B[3];
+    y = (y | (y >> S[3])) & B[3];
+
+    x = (x | (x >> S[4])) & B[4];
+    y = (y | (y >> S[4])) & B[4];
+
+    x = (x | (x >> S[5])) & B[5];
+    y = (y | (y >> S[5])) & B[5];
+
+    return x | (y << 32);
+}
+
+static ERL_NIF_TERM geohash_int_fast_decode(ErlNifEnv* env, int argc,
+                                       const ERL_NIF_TERM argv[])
+{
+    if (argc != 2 ||
+            !enif_is_map(env, argv[0]) ||
+            !enif_is_map(env, argv[1]))
+        return enif_make_badarg(env);
+
+    double w, e, n, s;
+    char smode[2];
+    ERL_NIF_TERM wt, et, nt, st, mt;
+    if (!enif_get_map_value(env, argv[0], ATOM_WEST, &wt) ||
+        !enif_get_map_value(env, argv[0], ATOM_EAST, &et) ||
+        !enif_get_map_value(env, argv[0], ATOM_NORTH, &nt) ||
+        !enif_get_map_value(env, argv[0], ATOM_SOUTH, &st) ||
+        !enif_get_map_value(env, argv[0], ATOM_MODE, &mt) ||
+        !enif_get_double(env, wt, &w) ||
+        !enif_get_double(env, et, &e) ||
+        !enif_get_double(env, nt, &n) ||
+        !enif_get_double(env, st, &s) ||
+        !enif_get_atom(env, mt, smode, 2, ERL_NIF_LATIN1))
+        return enif_make_badarg(env);
+
+    unsigned int level;
+    ErlNifUInt64 ebits;
+    ERL_NIF_TERM bitst, levelt;
+    if (!enif_get_map_value(env, argv[1], ATOM_BITS, &bitst) ||
+        !enif_get_map_value(env, argv[1], ATOM_LEVEL, &levelt) ||
+        !enif_get_uint64(env, bitst, &ebits) ||
+        !enif_get_uint(env, levelt, &level))
+        return enif_make_badarg(env);
+
+    uint64_t xyhilo = deinterleave64(ebits);
+    double lat_scale = n - s;
+    double lon_scale = e - w;
+    uint32_t ilato;        //get back the original integer coordinates
+    uint32_t ilono;
+    if (smode[0] == 'N') {
+        ilato = xyhilo;
+        ilono = xyhilo >> 32;
+    } else if (smode[0] == 'Z') {
+        ilato = xyhilo >> 32;
+        ilono = xyhilo;
+    } else {
+        return enif_make_tuple2(env, ATOM_ERROR, ATOM_ERR_UNSUPPORTED_MODE);
+    }
+
+    double ymin = s + (ilato * 1.0 / (1ull << level)) * lat_scale;
+    double ymax = s + ((ilato + 1) * 1.0 / (1ull << level)) * lat_scale;
+    double xmin = w + (ilono * 1.0 / (1ull << level)) * lon_scale;
+    double xmax = w + ((ilono + 1) * 1.0 / (1ull << level)) * lon_scale;
+
+    ERL_NIF_TERM m = enif_make_new_map(env);
+    ERL_NIF_TERM m1, m2, m3, m4;
+    enif_make_map_put(env, m, ATOM_XMIN, enif_make_double(env, xmin), &m1);
+    enif_make_map_put(env, m1, ATOM_XMAX, enif_make_double(env, xmax), &m2);
+    enif_make_map_put(env, m2, ATOM_YMIN, enif_make_double(env, ymin), &m3);
+    enif_make_map_put(env, m3, ATOM_YMAX, enif_make_double(env, ymax), &m4);
+    return enif_make_tuple2(env, ATOM_OK, m4);
 }
 
 static ERL_NIF_TERM geohash_int_fast_encode(ErlNifEnv* env, int argc,
@@ -134,6 +234,9 @@ static ERL_NIF_TERM geohash_int_fast_encode(ErlNifEnv* env, int argc,
     }
     else if (smode[0] == 'Z') {
         bits = interleave64(ilono, ilato);
+    }
+    else {
+        return enif_make_tuple2(env, ATOM_ERROR, ATOM_ERR_UNSUPPORTED_MODE);
     }
 
     ERL_NIF_TERM m = enif_make_new_map(env);
@@ -234,6 +337,11 @@ static int on_load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 
     ATOM_BITS = enif_make_atom(env, "bits");
     ATOM_LEVEL = enif_make_atom(env, "level");
+
+    ATOM_XMIN = enif_make_atom(env, "xmin");
+    ATOM_XMAX = enif_make_atom(env, "xmax");
+    ATOM_YMIN = enif_make_atom(env, "ymin");
+    ATOM_YMAX = enif_make_atom(env, "ymax");
 
     ErlNifResourceFlags flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
     ErlNifResourceType* rt = enif_open_resource_type(env, NULL,

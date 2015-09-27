@@ -3,7 +3,8 @@
 -export([define_world/5,
          fast_encode/4,
          encode/4,
-         decode/2]).
+         decode/2,
+         fast_decode/2]).
 
 -on_load(init/0).
 
@@ -82,6 +83,9 @@ decode(#{east:=E, north:=N, south:=S, west:=W, mode:='Z'}, #{bits:=H, level:=Lev
     {YMin,YMax,XMin,XMax} = do_decode(S, N, W, E, H, Level),
     {ok, #{xmin=>XMin,xmax=>XMax,ymin=>YMin,ymax=>YMax}}.
 
+-spec fast_decode(map(), map()) -> {ok, map()} | {error, atom()}.
+fast_decode(_World, _HashInt) ->
+    ?nif_stub.
 
 % @private
 do_encode(_Min, _Max, _L, _, 0, H) ->

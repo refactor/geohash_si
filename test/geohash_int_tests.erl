@@ -118,3 +118,24 @@ geohash_int_decode_leftbottom_z_test() ->
     {ok,PosArea3} = geohash_int:decode(World, Hash3),
     ?assertMatch(#{xmin:=0.0,xmax:=180.0,ymin:=0.0,ymax:=90.0}, PosArea3).
 
+decode_doubleprecision1_test() ->
+    {ok, World} = geohash_int:define_world(-20037726.37,20037726.37,
+                                           -20037726.37,20037726.37,
+                                          'N'),
+    Longitude = -1456662.0360231996,
+    Latitude = -17004060.830659393,
+    Level = 7,
+    {ok,Hash} = geohash_int:encode(World, Latitude, Longitude, Level),
+    {ok,PosArea} = geohash_int:decode(World, Hash),
+    ?assertMatch(#{xmin:=-1565447.37265625,xmax:=-1252357.898125,ymin:=-17219921.09921875,ymax:=-16906831.6246875}, PosArea).
+
+decode_doubleprecision2_test() ->
+    {ok, World} = geohash_int:define_world(-20037726.37,20037726.37,
+                                           -20037726.37,20037726.37,
+                                          'Z'),
+    Longitude = 4479913.102077536,
+    Latitude = 8698627.278478492,
+    Level = 8,
+    {ok,Hash} = geohash_int:encode(World, Latitude, Longitude, Level),
+    {ok,PosArea} = geohash_int:decode(World, Hash),
+    ?assertMatch(#{xmin:=4383252.6434375,xmax:=4539797.380703125,ymin:=8609960.549609374,ymax:=8766505.286875}, PosArea).
