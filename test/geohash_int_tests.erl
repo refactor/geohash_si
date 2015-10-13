@@ -176,10 +176,11 @@ get_neighbors2_test() ->
     Longitude = 100.0,
     Latitude = -10.0,
     Level = 3,
-    {ok,Hash} = geohash_int:encode(World, Latitude, Longitude, Level),
-    ?assertEqual(3, maps:get(level,Hash)),
-    ?assertEqual(4#132, maps:get(bits,Hash)),
+    {ok,Hash0} = geohash_int:encode(World, Latitude, Longitude, Level),
+    ?assertEqual(Level, maps:get(level,Hash0)),
+    ?assertEqual(4#132, maps:get(bits,Hash0)),
 
+    Hash = #{bits => 4#132, level => Level},
     {ok, Neighbors} = geohash_int:get_neighbors(World, Hash),
 
     ?assertMatch(#{east:=4#133, west:=4#123, south:=4#130, north:=4#310,

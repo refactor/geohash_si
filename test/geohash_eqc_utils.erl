@@ -65,6 +65,22 @@ generate_point_randomly() ->
              {{Longitude,Latitude}, Level, World}
          end).
 
+generate_interior_point_randomly() ->
+    ?LET({Level,World}, {eqc_gen:choose(3,?MAX_LEVEL), world()},
+         begin
+             CellNum = math:pow(2, Level),
+             #{north:=NB,south:=SB,west:=WB,east:=EB} = World,
+             CellWidth = (EB - WB) / CellNum,
+             CellHeight = (NB - SB) / CellNum,
+             N = NB - CellHeight,
+             S = SB + CellHeight,
+             E = EB - CellWidth,
+             W = WB + CellWidth,
+             Longitude = W + (E - W) * rand:uniform(),
+             Latitude = S + (N - S) * rand:uniform(),
+             {{Longitude,Latitude}, Level, World}
+         end).
+
 generate_point_at_2nd_quadrant() ->
     ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL), world()},
          begin

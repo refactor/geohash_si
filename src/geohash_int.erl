@@ -76,7 +76,7 @@ encode(_,_,_,_) ->
 
 
 -spec decode(map(), map()) -> {ok, map()} | {error, atom()}.
-decode(#{level:=Level}, #{level:=PointLevel}) when Level>?MAX_LEVEL; PointLevel>?MAX_LEVEL ->
+decode(_, #{level:=PointLevel}) when PointLevel>?MAX_LEVEL ->
     {error, too_small_world};
 decode(#{east:=E, north:=N, south:=S, west:=W, mode:='N'}, #{bits:=H, level:=Level}) ->
     {XMin,XMax,YMin,YMax} = do_decode(W, E, S, N, H, Level),
@@ -91,6 +91,8 @@ fast_decode(_World, _HashInt) ->
 
 
 -spec get_neighbors(map(), map()) -> map().
+get_neighbors(_, #{level:=Level}) when Level>?MAX_LEVEL ->
+    {error, too_small_world};
 get_neighbors(World, HashInt) ->
     ?nif_stub.
 
@@ -119,5 +121,6 @@ do_decode(XMin, XMax, YMin, YMax, HashInt, Level) ->
         do_decode((XMin+XMax)/2, XMax, (YMin+YMax)/2, YMax, HashInt, Level - 1)
     end.
 
+% @private 
 get_duplexbits(HashInt, Level) ->
     (HashInt bsr ((Level-1)*2)) band 2#11.
