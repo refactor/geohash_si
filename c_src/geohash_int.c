@@ -15,6 +15,11 @@ static ERL_NIF_TERM ATOM_SOUTH;
 static ERL_NIF_TERM ATOM_NORTH;
 static ERL_NIF_TERM ATOM_MODE;
 
+static ERL_NIF_TERM ATOM_NORTHWEST;
+static ERL_NIF_TERM ATOM_NORTHEAST;
+static ERL_NIF_TERM ATOM_SOUTHEAST;
+static ERL_NIF_TERM ATOM_SOUTHWEST;
+
 static ERL_NIF_TERM ATOM_BITS;
 static ERL_NIF_TERM ATOM_LEVEL;
 
@@ -30,32 +35,18 @@ typedef struct
 } geohash_int_handle;
 
 // Prototypes
-static ERL_NIF_TERM geohash_int_define_world(ErlNifEnv* env, int argc,
-                                             const ERL_NIF_TERM argv[]);
-static ERL_NIF_TERM geohash_int_fast_encode(ErlNifEnv* env, int argc,
-                                            const ERL_NIF_TERM argv[]);
-static ERL_NIF_TERM geohash_int_encode(ErlNifEnv* env, int argc,
-                                       const ERL_NIF_TERM argv[]);
-static ERL_NIF_TERM geohash_int_fast_decode(ErlNifEnv* env, int argc,
-                                       const ERL_NIF_TERM argv[]);
+static ERL_NIF_TERM geohash_int_fast_encode(ErlNifEnv*, int, const ERL_NIF_TERM[]);
+static ERL_NIF_TERM geohash_int_encode(ErlNifEnv*, int, const ERL_NIF_TERM[]);
+static ERL_NIF_TERM geohash_int_fast_decode(ErlNifEnv*, int, const ERL_NIF_TERM[]);
+static ERL_NIF_TERM geohash_int_get_neighbors(ErlNifEnv*, int, const ERL_NIF_TERM[]);
 
 static ErlNifFunc nif_funcs[] =
 {
     {"encode", 4, geohash_int_encode},
     {"fast_encode", 4, geohash_int_fast_encode},
     {"fast_decode", 2, geohash_int_fast_decode},
+    {"get_neighbors", 2, geohash_int_get_neighbors},
 };
-
-static ERL_NIF_TERM geohash_int_define_world(ErlNifEnv* env, int argc,
-                                             const ERL_NIF_TERM argv[])
-{
-    geohash_int_handle* handle = enif_alloc_resource(geohash_int_RESOURCE,
-                                                    sizeof(geohash_int_handle));
-    ERL_NIF_TERM result = enif_make_resource(env, handle);
-    enif_release_resource(handle);
-    return enif_make_tuple2(env, enif_make_atom(env, "ok"), result);
-}
-
 
 static inline uint64_t interleave64(uint32_t xlo, uint32_t ylo)
 {
@@ -316,6 +307,172 @@ static ERL_NIF_TERM geohash_int_encode(ErlNifEnv* env, int argc,
     return enif_make_tuple2(env, ATOM_OK, m2);
 }
 
+static void geohash_move_x(const unsigned int level, uint64_t* bits, const int8_t orientation)
+{
+    if (orientation == 0)
+        return;
+    uint64_t x = (*bits) & 0xaaaaaaaaaaaaaaaaLL;
+    uint64_t y = (*bits) & 0x5555555555555555LL;
+
+    uint64_t zz = 0x5555555555555555LL >> (64 - level * 2);
+    if (orientation > 0) {
+        x = x + (zz + 1);
+    } else {
+        x = x | zz;
+        x = x - (zz + 1);
+    }
+    x &= (0xaaaaaaaaaaaaaaaaLL >> (64 - level * 2));
+    *bits = (x | y);
+}
+
+static void geohash_move_y(const unsigned int level, uint64_t* bits, const int8_t orientation)
+{
+    if (orientation == 0)
+        return;
+    uint64_t x = (*bits) & 0xaaaaaaaaaaaaaaaaLL;
+    uint64_t y = (*bits) & 0x5555555555555555LL;
+
+    uint64_t zz = 0xaaaaaaaaaaaaaaaaLL >> (64 - level * 2);
+    if (orientation > 0) {
+        y = y + (zz + 1);
+    } else {
+        y = y | zz;
+        y = y - (zz + 1);
+    }
+    y &= (0x5555555555555555LL >> (64 - level * 2));
+    *bits = (x | y);
+}
+
+static ERL_NIF_TERM geohash_int_get_neighbors(ErlNifEnv* env, int argc,
+                                              const ERL_NIF_TERM argv[])
+{
+    if (argc != 2 ||
+            !enif_is_map(env, argv[0]) ||
+            !enif_is_map(env, argv[1]))
+        return enif_make_badarg(env);
+
+    double w, e, n, s;
+    char smode[2];
+    ERL_NIF_TERM wt, et, nt, st, mt;
+    if (!enif_get_map_value(env, argv[0], ATOM_WEST, &wt) ||
+        !enif_get_map_value(env, argv[0], ATOM_EAST, &et) ||
+        !enif_get_map_value(env, argv[0], ATOM_NORTH, &nt) ||
+        !enif_get_map_value(env, argv[0], ATOM_SOUTH, &st) ||
+        !enif_get_map_value(env, argv[0], ATOM_MODE, &mt) ||
+        !enif_get_double(env, wt, &w) ||
+        !enif_get_double(env, et, &e) ||
+        !enif_get_double(env, nt, &n) ||
+        !enif_get_double(env, st, &s) ||
+        !enif_get_atom(env, mt, smode, 2, ERL_NIF_LATIN1))
+        return enif_make_badarg(env);
+
+    unsigned int level;
+    ErlNifUInt64 tmpbits;
+    ERL_NIF_TERM bitst, levelt;
+    if (!enif_get_map_value(env, argv[1], ATOM_BITS, &bitst) ||
+        !enif_get_map_value(env, argv[1], ATOM_LEVEL, &levelt) ||
+        !enif_get_uint64(env, bitst, &tmpbits) ||
+        !enif_get_uint(env, levelt, &level))
+        return enif_make_badarg(env);
+    const uint64_t BITS = tmpbits;
+
+    ERL_NIF_TERM m = enif_make_new_map(env);
+    ERL_NIF_TERM ml, m0;
+    enif_make_map_put(env, m, ATOM_LEVEL, enif_make_uint(env, level), &ml);
+    enif_make_map_put(env, ml, ATOM_BITS, enif_make_uint64(env, tmpbits), &m0);
+
+    ERL_NIF_TERM m1, m2, m3, m4, m5, m6, m7, m8;
+    uint64_t bits;
+
+    // north
+    bits = BITS;
+    if (smode[0] == 'N') {
+        geohash_move_x(level, &bits, 0);
+        geohash_move_y(level, &bits, 1);
+    } else if (smode[0] == 'Z') {
+        geohash_move_x(level, &bits, 1);
+        geohash_move_y(level, &bits, 0);
+    }
+    tmpbits = bits;
+    enif_make_map_put(env, m0, ATOM_NORTH, enif_make_uint64(env, tmpbits), &m1);
+
+    // east
+    bits = BITS;
+    if (smode[0] == 'N') {
+        geohash_move_x(level, &bits, 1);
+        geohash_move_y(level, &bits, 0);
+    } else if (smode[0] == 'Z') {
+        geohash_move_x(level, &bits, 0);
+        geohash_move_y(level, &bits, 1);
+    }
+    tmpbits = bits;
+    enif_make_map_put(env, m1, ATOM_EAST, enif_make_uint64(env, tmpbits), &m2);
+
+    // west
+    bits = BITS;
+    if (smode[0] == 'N') {
+        geohash_move_x(level, &bits, -1);
+        geohash_move_y(level, &bits, 0);
+    } else if (smode[0] == 'Z') {
+        geohash_move_x(level, &bits, 0);
+        geohash_move_y(level, &bits, -1);
+    }
+    tmpbits = bits;
+    enif_make_map_put(env, m2, ATOM_WEST, enif_make_uint64(env, tmpbits), &m3);
+
+    // south
+    bits = BITS;
+    if (smode[0] == 'N') {
+        geohash_move_x(level, &bits, 0);
+        geohash_move_y(level, &bits, -1);
+    } else if (smode[0] == 'Z') {
+        geohash_move_x(level, &bits, -1);
+        geohash_move_y(level, &bits, 0);
+    }
+    tmpbits = bits;
+    enif_make_map_put(env, m3, ATOM_SOUTH, enif_make_uint64(env, tmpbits), &m4);
+
+    // south-east
+    bits = BITS;
+    if (smode[0] == 'N') {
+        geohash_move_x(level, &bits, 1);
+        geohash_move_y(level, &bits, -1);
+    } else if (smode[0] == 'Z') {
+        geohash_move_x(level, &bits, -1);
+        geohash_move_y(level, &bits, 1);
+    }
+    tmpbits = bits;
+    enif_make_map_put(env, m4, ATOM_SOUTHEAST, enif_make_uint64(env, tmpbits), &m5);
+
+    // north-west
+    bits = BITS;
+    if (smode[0] == 'N') {
+        geohash_move_x(level, &bits, -1);
+        geohash_move_y(level, &bits, 1);
+    } else if (smode[0] == 'Z') {
+        geohash_move_x(level, &bits, 1);
+        geohash_move_y(level, &bits, -1);
+    }
+    tmpbits = bits;
+    enif_make_map_put(env, m5, ATOM_NORTHWEST, enif_make_uint64(env, tmpbits), &m6);
+
+    // south-west
+    bits = BITS;
+    geohash_move_x(level, &bits, -1);
+    geohash_move_y(level, &bits, -1);
+    tmpbits = bits;
+    enif_make_map_put(env, m6, ATOM_SOUTHWEST, enif_make_uint64(env, tmpbits), &m7);
+
+    // north-east
+    bits = BITS;
+    geohash_move_x(level, &bits, 1);
+    geohash_move_y(level, &bits, 1);
+    tmpbits = bits;
+    enif_make_map_put(env, m7, ATOM_NORTHEAST, enif_make_uint64(env, tmpbits), &m8);
+
+    return enif_make_tuple2(env, ATOM_OK, m8);
+}
+
 static void geohash_int_resource_cleanup(ErlNifEnv* env, void* arg)
 {
     /* Delete any dynamically allocated memory stored in geohash_int_handle */
@@ -342,6 +499,11 @@ static int on_load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
     ATOM_XMAX = enif_make_atom(env, "xmax");
     ATOM_YMIN = enif_make_atom(env, "ymin");
     ATOM_YMAX = enif_make_atom(env, "ymax");
+
+    ATOM_NORTHEAST = enif_make_atom(env, "northeast");
+    ATOM_NORTHWEST = enif_make_atom(env, "northwest");
+    ATOM_SOUTHEAST = enif_make_atom(env, "southeast");
+    ATOM_SOUTHWEST = enif_make_atom(env, "southwest");
 
     ErlNifResourceFlags flags = ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER;
     ErlNifResourceType* rt = enif_open_resource_type(env, NULL,

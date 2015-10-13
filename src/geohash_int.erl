@@ -4,7 +4,8 @@
          fast_encode/4,
          encode/4,
          decode/2,
-         fast_decode/2]).
+         fast_decode/2,
+         get_neighbors/2]).
 
 -on_load(init/0).
 
@@ -73,6 +74,7 @@ encode(#{east:=E, north:=N, south:=S, west:=W, mode:=M}, Latitude, Longitude, Le
 encode(_,_,_,_) ->
     {error, out_of_world}.
 
+
 -spec decode(map(), map()) -> {ok, map()} | {error, atom()}.
 decode(#{level:=Level}, #{level:=PointLevel}) when Level>?MAX_LEVEL; PointLevel>?MAX_LEVEL ->
     {error, too_small_world};
@@ -86,6 +88,12 @@ decode(#{east:=E, north:=N, south:=S, west:=W, mode:='Z'}, #{bits:=H, level:=Lev
 -spec fast_decode(map(), map()) -> {ok, map()} | {error, atom()}.
 fast_decode(_World, _HashInt) ->
     ?nif_stub.
+
+
+-spec get_neighbors(map(), map()) -> map().
+get_neighbors(World, HashInt) ->
+    ?nif_stub.
+
 
 % @private
 do_encode(_Min, _Max, _L, _, 0, H) ->

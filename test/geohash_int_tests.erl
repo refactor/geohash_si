@@ -139,3 +139,51 @@ decode_doubleprecision2_test() ->
     {ok,Hash} = geohash_int:encode(World, Latitude, Longitude, Level),
     {ok,PosArea} = geohash_int:decode(World, Hash),
     ?assertMatch(#{xmin:=4383252.6434375,xmax:=4539797.380703125,ymin:=8609960.549609374,ymax:=8766505.286875}, PosArea).
+
+get_neighbors_test() ->
+    {ok, World} = geohash_int:define_world(-20037726.37,20037726.37,
+                                           -20037726.37,20037726.37,
+                                          'N'),
+    Hash = #{bits => 225797299132452, level => 24},
+    {ok, Neighbors} = geohash_int:get_neighbors(World, Hash),
+    ?assertMatch(#{east:=225797299132454, west:=225797299132430, south:=225797299132449, north:=225797299132453,
+                   northwest:=225797299132431, northeast:=225797299132455,
+                   southeast:=225797299132451, southwest:=225797299132427},
+                 Neighbors).
+
+get_neighbors1_test() ->
+    {ok, World} = geohash_int:define_world(-90.0,90.0,
+                                           -180.0,180.0,
+                                          'N'),
+    Longitude = 100.0,
+    Latitude = -10.0,
+    Level = 3,
+    {ok,Hash} = geohash_int:encode(World, Latitude, Longitude, Level),
+    ?assertEqual(3, maps:get(level,Hash)),
+    ?assertEqual(4#231, maps:get(bits,Hash)),
+
+    {ok, Neighbors} = geohash_int:get_neighbors(World, Hash),
+
+    ?assertMatch(#{east:=4#233, west:=4#213, south:=4#230, north:=4#320,
+                   northwest:=4#302, northeast:=4#322,
+                   southeast:=4#232, southwest:=4#212},
+                 Neighbors).
+    
+get_neighbors2_test() ->
+    {ok, World} = geohash_int:define_world(-90.0,90.0,
+                                           -180.0,180.0,
+                                          'Z'),
+    Longitude = 100.0,
+    Latitude = -10.0,
+    Level = 3,
+    {ok,Hash} = geohash_int:encode(World, Latitude, Longitude, Level),
+    ?assertEqual(3, maps:get(level,Hash)),
+    ?assertEqual(4#132, maps:get(bits,Hash)),
+
+    {ok, Neighbors} = geohash_int:get_neighbors(World, Hash),
+
+    ?assertMatch(#{east:=4#133, west:=4#123, south:=4#130, north:=4#310,
+                   northwest:=4#301, northeast:=4#311,
+                   southeast:=4#131, southwest:=4#121},
+                 Neighbors).
+    
