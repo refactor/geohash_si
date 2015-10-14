@@ -1,8 +1,11 @@
 .eunit/
+.erlang.mk/
+env.mk
 .qc/
 *.eqc
 .eqc-info
 .rebar/
+deps/
 ebin/
 *.o
 *.d
