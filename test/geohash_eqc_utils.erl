@@ -1,13 +1,13 @@
 -module(geohash_eqc_utils).
+-include_lib("proper/include/proper.hrl").
 
 -include("../src/geohash_int.hrl").
 
--include_lib("eqc/include/eqc.hrl").
 
 -compile(export_all).
 
 generate_point_at_leftbottem_corner() ->
-    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL), world()},
+    ?LET({Level,World}, {range(1,?MAX_LEVEL), world()},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              CellNum = math:pow(2, Level),
@@ -18,7 +18,7 @@ generate_point_at_leftbottem_corner() ->
          end).
 
 generate_point_at_righttop_corner() ->
-    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL), world()},
+    ?LET({Level,World}, {range(1,?MAX_LEVEL), world()},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              CellNum = math:pow(2, Level),
@@ -29,7 +29,7 @@ generate_point_at_righttop_corner() ->
          end).
 
 generate_point_at_center_leftbottom() ->
-    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL), world()},
+    ?LET({Level,World}, {range(1,?MAX_LEVEL), world()},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              CellNum = math:pow(2, Level),
@@ -43,7 +43,7 @@ generate_point_at_center_leftbottom() ->
          end).
 
 generate_point_at_center_righttop() ->
-    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL), world()},
+    ?LET({Level,World}, {range(1,?MAX_LEVEL), world()},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              CellNum = math:pow(2, Level),
@@ -57,7 +57,7 @@ generate_point_at_center_righttop() ->
          end).
 
 generate_point_randomly() ->
-    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL), world()},
+    ?LET({Level,World}, {range(1,?MAX_LEVEL), world()},
          begin
              #{north:=N,south:=S,west:=W,east:=E} = World,
              Longitude = W + (E - W) * rand:uniform(),
@@ -66,7 +66,7 @@ generate_point_randomly() ->
          end).
 
 generate_interior_point_randomly() ->
-    ?LET({Level,World}, {eqc_gen:choose(3,?MAX_LEVEL), world()},
+    ?LET({Level,World}, {range(3,?MAX_LEVEL), world()},
          begin
              CellNum = math:pow(2, Level),
              #{north:=NB,south:=SB,west:=WB,east:=EB} = World,
@@ -82,7 +82,7 @@ generate_interior_point_randomly() ->
          end).
 
 generate_point_at_2nd_quadrant() ->
-    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL), world()},
+    ?LET({Level,World}, {range(1,?MAX_LEVEL), world()},
          begin
              #{mode:=M, north:=N,south:=S,west:=W,east:=E} = World,
              HalfWidth = (E - W) / 2,
@@ -92,7 +92,7 @@ generate_point_at_2nd_quadrant() ->
          end).
 
 generate_point_at_4th_quadrant() ->
-    ?LET({Level,World}, {eqc_gen:choose(1,?MAX_LEVEL), world()},
+    ?LET({Level,World}, {range(1,?MAX_LEVEL), world()},
          begin
              #{mode:=M, north:=N,south:=S,west:=W,east:=E} = World,
              HalfWidth = (E - W) / 2,

@@ -1,8 +1,7 @@
 -module(geohash_int_getneighbors_eqc).
+-include_lib("proper/include/proper.hrl").
 
 -include("../src/geohash_int.hrl").
-
--include_lib("eqc/include/eqc.hrl").
 
 -compile(export_all).
 

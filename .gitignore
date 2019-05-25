@@ -3,10 +3,16 @@
 env.mk
 .qc/
 *.eqc
+*.plt
+erl_crash.dump
+_rel/
+a.out
+*.log
 .eqc-info
 .rebar/
 deps/
 ebin/
+priv/
 *.o
 *.d
 *.so

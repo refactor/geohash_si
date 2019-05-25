@@ -24,7 +24,7 @@ init() ->
                   Path ->
                       Path
               end,
-    erlang:load_nif(filename:join(PrivDir, ?MODULE), 0).
+    erlang:load_nif(filename:join(PrivDir, "geohash_si"), 0).
 
 
 %% Hashing works like this:
